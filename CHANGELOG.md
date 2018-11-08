@@ -1,7 +1,11 @@
 # VERSION HISTORY
 
+- 1.2.12 (4 September 2018)
+   - Added --segment option, which whitespace-delimits all Chinese (Han) and Korean (Hangul) characters.
+     Other idiographic writing systems may be added later.
+
 - 1.2.11 (29 August 2018)
-   - Added a function for sentence-level, smoothed BLEU
+   - Added a function for sentence-level, smoothed BLEU (thanks to Mathias Müller)
 
 - 1.2.10 (23 May 2018)
    - Added wmt18 test set (with references)

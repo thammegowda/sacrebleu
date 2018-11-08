@@ -37,7 +37,7 @@ from typing import List, Iterable, Tuple
 import math
 import unicodedata
 
-VERSION = '1.2.11'
+VERSION = '1.2.12'
 
 try:
     # SIGPIPE is not available on Windows machines, throwing an exception.
@@ -492,6 +492,20 @@ DATASETS = {
 }
 
 
+def segment_characters(line):
+    """
+    Whitespace delimits all Korean (Hangul) and Chinese (Han) characters.
+
+    :param line: a line to segment
+    :return: the segmented line
+    """
+
+    print('IN', line)
+    line = re.sub(r'(\\p{Script=Latin})', ' \1 ', line)
+    print('OUT', line)
+    return line
+
+
 def tokenize_13a(line):
     """
     Tokenizes an input line using a relatively minimal tokenization that is however equivalent to mteval-v13a, used by WMT.
@@ -727,13 +741,15 @@ def bleu_signature(args, numrefs):
         'case': 'c',
         'tok': 'tok',
         'numrefs': '#',
-        'version': 'v'
+        'version': 'v',
+        'segment': '_',
     }
 
     signature = {'tok': args.tokenize,
                  'version': VERSION,
                  'smooth': args.smooth,
                  'numrefs': numrefs,
+                 'segment': args.segment,
                  'case': 'lc' if args.lc else 'mixed'}
 
     if args.test_set is not None:
@@ -1020,7 +1036,7 @@ def sentence_bleu(hypothesis: str,
 
 
 def corpus_bleu(sys_stream, ref_streams, smooth='exp', smooth_floor=0.0, force=False, lowercase=False,
-                tokenize=DEFAULT_TOKENIZER, use_effective_order=False) -> BLEU:
+                tokenize=DEFAULT_TOKENIZER, use_effective_order=False, segment=False) -> BLEU:
     """Produces BLEU scores along with its sufficient statistics from a source against one or more references.
 
     :param sys_stream: The system stream (a sequence of segments)
@@ -1064,7 +1080,13 @@ def corpus_bleu(sys_stream, ref_streams, smooth='exp', smooth_floor=0.0, force=F
                 logging.warning('It looks like you forgot to detokenize your test data, which may hurt your score.')
                 logging.warning('If you insist your data is detokenized, or don\'t care, you can suppress this message with \'--force\'.')
 
-        output, *refs = [TOKENIZERS[tokenize](x.rstrip()) for x in lines]
+        output, *refs = lines
+        if segment:
+            output, *refs = [segment_characters(x) for x in [output] + refs]
+
+        output, *refs = [TOKENIZERS[tokenize](x.rstrip()) for x in [output] + refs]
+        print('OUTPUT', len(output.split()), output)
+        print('REF', len(refs[0].split()), refs[0])
 
         ref_ngrams, closest_diff, closest_len = ref_stats(output, refs)
 
@@ -1240,6 +1262,8 @@ def main():
                             help='dump the bibtex citation and quit.')
     arg_parser.add_argument('-V', '--version', action='version',
                             version='%(prog)s {}'.format(VERSION))
+    arg_parser.add_argument('--segment', default=False, action='store_true',
+                            help='Adds whitespace around Korean (Hangul) and Chinese (Han) characters prior to tokenization')
     args = arg_parser.parse_args()
 
     # Explicitly set the encoding
@@ -1321,7 +1345,7 @@ def main():
 
     try:
         if 'bleu' in args.metrics:
-            bleu = corpus_bleu(system, refs, smooth=args.smooth, force=args.force, lowercase=args.lc, tokenize=args.tokenize)
+            bleu = corpus_bleu(system, refs, smooth=args.smooth, force=args.force, lowercase=args.lc, tokenize=args.tokenize, segment=args.segment)
         if 'chrf' in args.metrics:
             chrf = corpus_chrf(system, refs[0], beta=args.chrf_beta, order=args.chrf_order, remove_whitespace=not args.chrf_whitespace)
     except EOFError:

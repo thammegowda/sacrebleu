@@ -37,7 +37,7 @@ if __package__ is None and __name__ == '__main__':
 
 from .tokenizers import TOKENIZERS, DEFAULT_TOKENIZER
 from .dataset import DATASETS, DOMAINS, COUNTRIES, SUBSETS
-from .metrics import METRICS, AVG_TYPES, DEF_F_BETA, DEF_AVERAGE
+from .metrics import METRICS, DEF_F_BETA
 
 from .utils import smart_open, filter_subset, get_available_origlangs, SACREBLEU_DIR
 from .utils import get_langpairs_for_testset, get_available_testsets
@@ -128,10 +128,6 @@ def parse_args():
     clseval_p.add_argument('--report',  type=str,
                            help='Path to write detailed performance report of individual classes.'
                                 ' (optional)')
-    clseval_p.add_argument('-a', '--average', metavar='AVG', choices=AVG_TYPES, default=DEF_AVERAGE,
-                            help='How to consolidate individual class performances to summarize'
-                                 f' multi-class performance. Choices: {", ".join(AVG_TYPES.keys())}'
-                                 f' (default: %(default)s)')
 
     # Reporting related arguments
     arg_parser.add_argument('--quiet', '-q', default=False, action='store_true',

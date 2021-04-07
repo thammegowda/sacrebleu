@@ -43,17 +43,25 @@ def test_clseval():
         ['ಕೊಡುವೆನು',   1,     1,        1,         1,          1,     1],
     ]
 
-    smooth_value = 1
+    smooth_value = 1   # small smoothing value
     idx_refs, idx_f1 = 1, -1
     macro_expected = 100 * sum(r[idx_f1] for r in stats) / len(stats)
-    macro_score = corpus_macrof(hyps, refss)
-    assert abs(macro_score.score - macro_expected) < EPSILON
-
     # Frequencies for micro avg are always from references; so we can compare different hyps
     norm = sum(smooth_value + r[idx_refs] for r in stats)
     micro_expected = 100 * sum((smooth_value + r[idx_refs]) * r[idx_f1] for r in stats) / norm
-    micro_score = corpus_microf(hyps, refss)
+
+    assert abs(micro_expected - macro_expected) > 1000 * EPSILON  # they are different
+
+    macro_score = corpus_macrof(hyps, refss)
+    assert abs(macro_score.score - macro_expected) < EPSILON
+
+
+    micro_score = corpus_microf(hyps, refss, smooth_value=smooth_value)
     assert abs(micro_score.score - micro_expected) < EPSILON
+
+    infinity = 1E12     # using a large smoothing_value => micro approaches macro
+    micro_score2 = corpus_microf(hyps, refss, smooth_value=infinity)
+    assert abs(micro_score2.score - macro_expected) < EPSILON  # they are same
 
 
 if __name__ == '__main__':
